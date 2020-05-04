@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -13,6 +8,12 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Owin;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.AspNet {
   internal class ClientConnectionManager : IClientConnectionManager {
@@ -26,13 +27,34 @@ namespace Microsoft.Azure.SignalR.AspNet {
       _logger = loggerFactory?.CreateLogger<ClientConnectionManager>() ?? NullLogger<ClientConnectionManager>.Instance;
     }
 
-    public async Task<IServiceTransport> CreateConnection(OpenConnectionMessage message,
-        IServiceConnection serviceConnection) {
+    public async Task<IServiceTransport> CreateConnection(
+      OpenConnectionMessage message,
+      IServiceConnection serviceConnection
+    ) {
       var dispatcher = new ClientConnectionHubDispatcher(_configuration, message.ConnectionId);
       dispatcher.Initialize(_configuration.Resolver);
 
       var responseStream = new MemoryStream();
       var hostContext = GetHostContext(message, responseStream, serviceConnection);
+
+      #region debbugging ish
+      //string msg = "just logging:";
+      //try {
+      //  foreach (var h in hostContext.Request.Headers) {
+      //    msg += h.Key + ":" + h.Value + " | ";
+      //  }
+      //  foreach (var c in hostContext.Request.Cookies) {
+      //    msg += c.Key + ":" + c.Value + " | ";
+      //  }
+      //  //  msg += hostContext.Request.User.Identity.Name + " | ";
+      //  //  msg += message.GetUserPrincipal().Identity.Name + " | ";
+      //} catch (Exception ex1) {
+      //  msg += ex1.Message;
+      //}
+      //if (DateTime.UtcNow.Ticks > 0) {
+      //  throw new InvalidOperationException(msg);
+      //}
+      #endregion
 
       if (dispatcher.Authorize(hostContext.Request)) {
         // ProcessRequest checks if the connectionToken matches "{connectionid}:{userName}" format with context.User
@@ -49,7 +71,17 @@ namespace Microsoft.Azure.SignalR.AspNet {
       }
 
       // This happens when hub is not found
-      throw new InvalidOperationException("Unable to authorize request");
+      //was: throw new InvalidOperationException("Unable to authorize request");
+      var msg = "Unable to authorize request: ";
+      try {
+        msg += hostContext.Request.User.Identity.Name + " | ";
+        msg += message.GetUserPrincipal().Identity.Name + " | ";
+        msg += message.QueryString + " | ";
+        msg += message.ConnectionId + " | ";
+      } catch (Exception ex1) {
+        msg += ex1.Message;
+      }
+      throw new InvalidOperationException(msg);
     }
 
     public bool TryAdd(string connectionId, IServiceConnection serviceConnection) {
@@ -72,9 +104,11 @@ namespace Microsoft.Azure.SignalR.AspNet {
       var response = context.Response;
       var request = context.Request;
 
+      //System.Web.HttpContext.Current
       response.Body = responseStream;
 
       var user = request.User = message.GetUserPrincipal();
+      //request.User.Identity.Name
 
       request.Path = new PathString("/");
 
