@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -15,6 +12,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Owin.Infrastructure;
 using Owin;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Azure.SignalR.AspNet {
   internal class DispatcherHelper {
