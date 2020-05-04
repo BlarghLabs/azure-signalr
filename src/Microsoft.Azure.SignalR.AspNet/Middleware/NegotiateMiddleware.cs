@@ -1,16 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Mime;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -19,10 +9,16 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace Microsoft.Azure.SignalR.AspNet
-{
-    internal class NegotiateMiddleware : OwinMiddleware
+namespace Microsoft.Azure.SignalR.AspNet {
+  internal class NegotiateMiddleware : OwinMiddleware
     {
         private static readonly HashSet<string> PreservedQueryParameters =
             new HashSet<string>(new[] {"clientProtocol", "connectionToken", "connectionData"});
