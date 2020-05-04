@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace Microsoft.Azure.SignalR {
@@ -23,7 +24,15 @@ namespace Microsoft.Azure.SignalR {
     private static readonly string DefaultNameClaimType = DefaultClaimsIdentity.NameClaimType;
     private static readonly string DefaultRoleClaimType = DefaultClaimsIdentity.RoleClaimType;
 
-    public static IEnumerable<Claim> BuildJwtClaims(ClaimsPrincipal user, string userId, Func<IEnumerable<Claim>> claimsProvider, string serverName = null, ServerStickyMode mode = ServerStickyMode.Disabled, bool enableDetailedErrors = false, int endpointsCount = 1) {
+    public static IEnumerable<Claim> BuildJwtClaims(
+      ClaimsPrincipal user,
+      string userId,
+      Func<IEnumerable<Claim>> claimsProvider,
+      string serverName = null,
+      ServerStickyMode mode = ServerStickyMode.Disabled,
+      bool enableDetailedErrors = false,
+      int endpointsCount = 1
+    ) {
       if (userId != null) {
         yield return new Claim(Constants.ClaimType.UserId, userId);
       }
@@ -86,36 +95,59 @@ namespace Microsoft.Azure.SignalR {
       return GetUserPrincipal(message.Claims);
     }
 
+    //temp
+    //private static Mutex m = new Mutex();
+
     internal static ClaimsPrincipal GetUserPrincipal(Claim[] messageClaims) {
-      if (messageClaims == null || messageClaims.Length == 0) {
-        return EmptyPrincipal;
-      }
-
-      var claims = new List<Claim>();
-      var authenticationType = DefaultAuthenticationType;
-      string nameType = null;
-      string roleType = null;
-      foreach (var claim in messageClaims) {
-        if (claim.Type == Constants.ClaimType.AuthenticationType) {
-          authenticationType = claim.Value;
-        } else if (claim.Type == Constants.ClaimType.NameType) {
-          nameType = claim.Value;
-        } else if (claim.Type == Constants.ClaimType.RoleType) {
-          roleType = claim.Value;
-        } else if (claim.Type.StartsWith(Constants.ClaimType.AzureSignalRUserPrefix)) {
-          var claimName = claim.Type.Substring(Constants.ClaimType.AzureSignalRUserPrefix.Length);
-          claims.Add(new Claim(claimName, claim.Value));
-        } else if (!SystemClaims.Contains(claim.Type) && !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix)) {
-          claims.Add(claim);
+      //lock (m) {
+        if (messageClaims == null || messageClaims.Length == 0) {
+          return EmptyPrincipal;
         }
-      }
 
-      if (claims.Count == 0) {
-        // For JWT token, the authenticated claims must contain non-system claims
-        return EmptyPrincipal;
-      }
+        //var skipHack = true;
+        var claims = new List<Claim>();
+        var authenticationType = DefaultAuthenticationType;
+        string nameType = null;
+        string roleType = null;
+        foreach (var claim in messageClaims) {
+          if (claim.Type == Constants.ClaimType.AuthenticationType) {
+            authenticationType = claim.Value;
+          } else if (claim.Type == Constants.ClaimType.NameType) {
+            nameType = claim.Value;
+          //} else if (claim.Type == Constants.ClaimType.UserId) {
+          //  if (!skipHack) {
+          //    claims.Add(new Claim(
+          //      type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+          //      value: claim.Value,
+          //      valueType: "http://www.w3.org/2001/XMLSchema#string",
+          //      issuer: "LOCAL AUTHORITY",
+          //      originalIssuer: "LOCAL AUTHORITY")
+          //    );
+          //  }
+          } else if (claim.Type == Constants.ClaimType.RoleType) {
+            roleType = claim.Value;
+          } else if (claim.Type.StartsWith(Constants.ClaimType.AzureSignalRUserPrefix)) {
+            var claimName = claim.Type.Substring(Constants.ClaimType.AzureSignalRUserPrefix.Length);
+            claims.Add(new Claim(claimName, claim.Value));
+          } else if (!SystemClaims.Contains(claim.Type) && !claim.Type.StartsWith(Constants.ClaimType.AzureSignalRSysPrefix)) {
+            claims.Add(claim);
+          }
+        }
 
-      return new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType, nameType, roleType));
+        if (claims.Count == 0) {
+          // For JWT token, the authenticated claims must contain non-system claims
+          return EmptyPrincipal;
+        }
+
+        return new ClaimsPrincipal(
+          new ClaimsIdentity(
+            claims: claims,
+            authenticationType: authenticationType,
+            nameType: nameType,
+            roleType: roleType)
+          )
+        ;
+      //}
     }
   }
 }
