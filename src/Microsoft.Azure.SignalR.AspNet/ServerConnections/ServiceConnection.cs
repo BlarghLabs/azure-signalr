@@ -1,6 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.AspNetCore.Connections;
+using Microsoft.Azure.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -11,10 +15,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.Azure.SignalR.Protocol;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.SignalR.AspNet {
   internal partial class ServiceConnection : ServiceConnectionBase {
@@ -166,8 +166,7 @@ namespace Microsoft.Azure.SignalR.AspNet {
     private async Task OnConnectedAsyncCore(ClientContext clientContext, OpenConnectionMessage message) {
       var connectionId = message.ConnectionId;
       try {
-        clientContext.Transport =
-            await _clientConnectionManager.CreateConnection(message, this);
+        clientContext.Transport = await _clientConnectionManager.CreateConnection(message, this);
         Log.ConnectedStarting(Logger, connectionId);
       } catch (Exception e) {
         Log.ConnectedStartingFailed(Logger, connectionId, e);
