@@ -1,6 +1,16 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Mime;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Hubs;
@@ -9,13 +19,6 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.SignalR.AspNet {
   internal class NegotiateMiddleware : OwinMiddleware {
@@ -179,10 +182,9 @@ namespace Microsoft.Azure.SignalR.AspNet {
       var user = owinContext.Authentication?.User;
       var userId = _provider?.GetUserId(request);
 
-      var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount);
+      var claims = ClaimsUtility.BuildJwtClaims(user, userId, GetClaimsProvider(owinContext), _serverName, _mode, _enableDetailedErrors, _endpointsCount).ToList();
 
       yield return new Claim(Constants.ClaimType.Version, AssemblyVersion);
-
       foreach (var claim in claims) {
         yield return claim;
       }
